@@ -1,4 +1,4 @@
-# BLOCK BLAST — Fixed Full HTML Code
+# BLOCK BLAST — Modern Arcade Grid Version (Full Code)
 
 ```html
 <!DOCTYPE html>
@@ -9,9 +9,9 @@
 <title>BLOCK BLAST</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
+*{margin:0;padding:0;box-sizing:border-box;}
 
-body {
+body{
   background:#f4f6fb;
   display:flex;
   align-items:center;
@@ -22,16 +22,16 @@ body {
   touch-action:none;
 }
 
-#bg {
+#bg{
   position:fixed;
   inset:0;
   z-index:0;
 }
 
-#game {
+#game{
   position:relative;
   z-index:1;
-  border-radius:12px;
+  border-radius:14px;
 }
 </style>
 </head>
@@ -40,602 +40,268 @@ body {
 <canvas id="game"></canvas>
 
 <script>
-const GRID_N = 8;
-const availW = Math.min(window.innerWidth, window.innerHeight * 0.62, 500);
-const CELL = Math.floor((availW - 24) / (GRID_N + 1));
-const CW = GRID_N * CELL + 80;
-const GRID_X = (CW - GRID_N * CELL) / 2;
-const GRID_Y = 108;
-const TRAY_CY = GRID_Y + GRID_N * CELL + 88;
-const TRAY_W = CW / 3;
-const MINI = Math.max(14, Math.floor(CELL * 0.37));
-const CH = TRAY_CY + 112;
-const R = Math.max(4, Math.floor(CELL * 0.13));
-const FPS = 60;
+const GRID_N=8;
+const availW=Math.min(window.innerWidth,window.innerHeight*0.62,520);
+const CELL=Math.floor((availW-24)/(GRID_N+1));
+const CW=GRID_N*CELL+80;
+const GRID_X=(CW-GRID_N*CELL)/2;
+const GRID_Y=108;
+const TRAY_CY=GRID_Y+GRID_N*CELL+88;
+const TRAY_W=CW/3;
+const MINI=Math.max(14,Math.floor(CELL*0.37));
+const CH=TRAY_CY+112;
+const R=Math.max(4,Math.floor(CELL*0.13));
+const FPS=60;
 
-const bgCanvas = document.getElementById('bg');
-const bgCtx = bgCanvas.getContext('2d');
+const bgCanvas=document.getElementById('bg');
+const bgCtx=bgCanvas.getContext('2d');
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
 
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-canvas.width = CW;
-canvas.height = CH;
+canvas.width=CW;
+canvas.height=CH;
 
-const COLORS = [
-  { fill:'#ff3d55', glow:'#ff003388', hi:'#ff8899' },
-  { fill:'#3dcfff', glow:'#0099ff88', hi:'#aaeeff' },
-  { fill:'#ffe040', glow:'#ffcc0088', hi:'#fff4a0' },
-  { fill:'#40ff7a', glow:'#00ff4488', hi:'#a0ffcc' },
-  { fill:'#bf40ff', glow:'#aa00ff88', hi:'#e090ff' },
-  { fill:'#ff8c3d', glow:'#ff660088', hi:'#ffc090' },
-  { fill:'#ff3db8', glow:'#ff008888', hi:'#ff90d8' }
+const COLORS=[
+  {fill:'#ff3d55',glow:'#ff003388',hi:'#ff8899'},
+  {fill:'#3dcfff',glow:'#0099ff88',hi:'#aaeeff'},
+  {fill:'#ffe040',glow:'#ffcc0088',hi:'#fff4a0'},
+  {fill:'#40ff7a',glow:'#00ff4488',hi:'#a0ffcc'},
+  {fill:'#bf40ff',glow:'#aa00ff88',hi:'#e090ff'},
+  {fill:'#ff8c3d',glow:'#ff660088',hi:'#ffc090'},
+  {fill:'#ff3db8',glow:'#ff008888',hi:'#ff90d8'}
 ];
 
-const TEMPLATES = [
-  [[0,0],[0,1],[0,2],[0,3]],
-  [[0,0],[1,0],[2,0],[3,0]],
-  [[0,0],[0,1],[1,0],[1,1]],
-  [[0,0],[0,1],[0,2],[1,1]],
-  [[0,1],[1,0],[1,1],[1,2]],
-  [[0,0],[1,0],[2,0],[2,1]],
-  [[0,1],[1,1],[2,0],[2,1]],
-  [[0,1],[0,2],[1,0],[1,1]],
-  [[0,0],[0,1],[1,1],[1,2]],
-  [[0,0]],
-  [[0,0],[0,1]],
-  [[0,0],[1,0]],
-  [[0,0],[0,1],[0,2]],
-  [[0,0],[1,0],[2,0]],
-  [[0,0],[1,0],[1,1]],
-  [[0,1],[1,0],[1,1]],
-  [[0,0],[0,1],[0,2],[1,0]],
-  [[0,0],[0,1],[0,2],[1,2]],
-  [[0,0],[1,0],[2,0],[2,1],[2,2]],
-  [[0,0],[0,1],[1,0],[1,1],[0,2]]
+const TEMPLATES=[
+[[0,0],[0,1],[0,2],[0,3]],
+[[0,0],[1,0],[2,0],[3,0]],
+[[0,0],[0,1],[1,0],[1,1]],
+[[0,0],[0,1],[0,2],[1,1]],
+[[0,1],[1,0],[1,1],[1,2]],
+[[0,0],[1,0],[2,0],[2,1]],
+[[0,1],[1,1],[2,0],[2,1]],
+[[0,1],[0,2],[1,0],[1,1]],
+[[0,0],[0,1],[1,1],[1,2]],
+[[0,0]]
 ];
 
-function roundRect(cx, x, y, w, h, r) {
-  cx.beginPath();
-  cx.moveTo(x + r, y);
-  cx.lineTo(x + w - r, y);
-  cx.quadraticCurveTo(x+w, y, x+w, y+r);
-  cx.lineTo(x+w, y+h-r);
-  cx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-  cx.lineTo(x+r, y+h);
-  cx.quadraticCurveTo(x, y+h, x, y+h-r);
-  cx.lineTo(x, y+r);
-  cx.quadraticCurveTo(x, y, x+r, y);
-  cx.closePath();
+function roundRect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.lineTo(x+w-r,y);
+  c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r);
+  c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  c.lineTo(x+r,y+h);
+  c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.closePath();
 }
 
-function drawBlock(x, y, w, h, col) {
+function drawBlock(x,y,w,h,col){
   ctx.save();
-  ctx.shadowColor = col.glow;
-  ctx.shadowBlur = window.innerWidth < 600 ? 8 : 14;
-  ctx.fillStyle = col.fill;
-  roundRect(ctx, x, y, w, h, R);
+  ctx.shadowColor=col.glow;
+  ctx.shadowBlur=10;
+  ctx.fillStyle=col.fill;
+  roundRect(ctx,x,y,w,h,R);
   ctx.fill();
   ctx.restore();
 
-  ctx.fillStyle = col.fill;
-  roundRect(ctx, x, y, w, h, R);
-  ctx.fill();
-
-  const hl = ctx.createLinearGradient(x, y, x, y+h);
-  hl.addColorStop(0, col.hi + 'aa');
-  hl.addColorStop(1, 'transparent');
-  ctx.fillStyle = hl;
-  roundRect(ctx, x+1, y+1, w-2, h-2, R);
+  ctx.fillStyle=col.fill;
+  roundRect(ctx,x,y,w,h,R);
   ctx.fill();
 }
 
-let stars = [];
-
-function initBg() {
-  bgCanvas.width = window.innerWidth;
-  bgCanvas.height = window.innerHeight;
-
-  stars = Array.from({length:160}, () => ({
-    x:Math.random()*bgCanvas.width,
-    y:Math.random()*bgCanvas.height,
-    r:Math.random()*1.5,
+// STAR BG
+let stars=[];
+function initBg(){
+  bgCanvas.width=innerWidth;
+  bgCanvas.height=innerHeight;
+  stars=Array.from({length:120},()=>({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    r:Math.random()*1.2,
     a:Math.random(),
     da:(Math.random()-0.5)*0.01
   }));
 }
 
-function drawBg() {
+function drawBg(){
   bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
 
-  const g = bgCtx.createRadialGradient(
-    bgCanvas.width/2,
-    bgCanvas.height/2,
-    0,
-    bgCanvas.width/2,
-    bgCanvas.height/2,
-    bgCanvas.height
-  );
-
+  const g=bgCtx.createLinearGradient(0,0,0,bgCanvas.height);
   g.addColorStop(0,'#ffffff');
   g.addColorStop(1,'#e9eefc');
-
-  bgCtx.fillStyle = g;
+  bgCtx.fillStyle=g;
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
 
-  stars.forEach(s => {
-    s.a += s.da;
-    if(s.a > 1 || s.a < 0.1) s.da *= -1;
-
+  stars.forEach(s=>{
+    s.a+=s.da;
+    if(s.a>1||s.a<0.1)s.da*=-1;
+    bgCtx.fillStyle=`rgba(120,140,255,${s.a})`;
     bgCtx.beginPath();
     bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
-    bgCtx.fillStyle = `rgba(150,180,255,${s.a})`;
     bgCtx.fill();
   });
 }
 
-class Grid {
-  constructor() {
-    this.cells = Array.from({length:GRID_N},()=>Array(GRID_N).fill(null));
-    this.flash = new Set();
-    this.flashT = 0;
-    this.pendingClear = [];
+class Grid{
+  constructor(){
+    this.cells=Array.from({length:GRID_N},()=>Array(GRID_N).fill(null));
+    this.flash=new Set();
+    this.t=0;
   }
 
-  inBounds(r,c) {
-    return r>=0 && r<GRID_N && c>=0 && c<GRID_N;
+  inBounds(r,c){return r>=0&&c>=0&&r<GRID_N&&c<GRID_N;}
+
+  canPlace(o,r,c){
+    return o.every(([dr,dc])=>this.inBounds(r+dr,c+dc)&&!this.cells[r+dr][c+dc]);
   }
 
-  canPlace(offsets,or,oc) {
-    return offsets.every(([dr,dc]) => {
-      const r = or+dr;
-      const c = oc+dc;
-      return this.inBounds(r,c) && !this.cells[r][c];
-    });
+  place(o,r,c,col){o.forEach(([dr,dc])=>this.cells[r+dr][c+dc]=col);}
+
+  clear(){
+    let rows=[],cols=[];
+
+    for(let r=0;r<GRID_N;r++)if(this.cells[r].every(x=>x))rows.push(r);
+    for(let c=0;c<GRID_N;c++)if(this.cells.every(r=>r[c]))cols.push(c);
+
+    this.flash=new Set();
+
+    rows.forEach(r=>{for(let c=0;c<GRID_N;c++)this.flash.add(`${r},${c}`)});
+    cols.forEach(c=>{for(let r=0;r<GRID_N;r++)this.flash.add(`${r},${c}`)});
+
+    this.flashT=12;
+
+    return rows.length+cols.length;
   }
 
-  canFitAnywhere(offsets) {
-    for(let r=0;r<GRID_N;r++)
-      for(let c=0;c<GRID_N;c++)
-        if(this.canPlace(offsets,r,c)) return true;
+  draw(){
 
-    return false;
-  }
+    // MODERN ARCADE GRID PANEL
+    ctx.save();
 
-  place(offsets,or,oc,col) {
-    offsets.forEach(([dr,dc]) => {
-      this.cells[or+dr][oc+dc] = col;
-    });
-  }
+    // glowing panel
+    const grd=ctx.createLinearGradient(GRID_X,GRID_Y,GRID_X,GRID_Y+GRID_N*CELL);
+    grd.addColorStop(0,'#0b1020');
+    grd.addColorStop(1,'#070a14');
 
-  clearLines() {
-    const rows=[];
-    const cols=[];
-
-    for(let r=0;r<GRID_N;r++)
-      if(this.cells[r].every(c=>c)) rows.push(r);
-
-    for(let c=0;c<GRID_N;c++)
-      if(this.cells.every(row=>row[c])) cols.push(c);
-
-    const cleared = new Set();
-
-    rows.forEach(r=>{
-      for(let c=0;c<GRID_N;c++)
-        cleared.add(`${r},${c}`);
-    });
-
-    cols.forEach(c=>{
-      for(let r=0;r<GRID_N;r++)
-        cleared.add(`${r},${c}`);
-    });
-
-    this.flash = cleared;
-    this.flashT = 14;
-    this.pendingClear = [...cleared];
-
-    return rows.length + cols.length;
-  }
-
-  draw() {
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle=grd;
     roundRect(ctx,GRID_X-10,GRID_Y-10,GRID_N*CELL+20,GRID_N*CELL+20,16);
     ctx.fill();
 
-    for(let r=0;r<GRID_N;r++) {
-      for(let c=0;c<GRID_N;c++) {
-        const col = this.cells[r][c];
-        if(col)
+    // neon grid lines
+    ctx.strokeStyle='rgba(0,255,255,0.08)';
+    for(let i=0;i<=GRID_N;i++){
+      ctx.beginPath();
+      ctx.moveTo(GRID_X+i*CELL,GRID_Y);
+      ctx.lineTo(GRID_X+i*CELL,GRID_Y+GRID_N*CELL);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(GRID_X,GRID_Y+i*CELL);
+      ctx.lineTo(GRID_X+GRID_N*CELL,GRID_Y+i*CELL);
+      ctx.stroke();
+    }
+
+    // scanline effect
+    ctx.fillStyle='rgba(255,255,255,0.03)';
+    for(let y=0;y<GRID_N*CELL;y+=4){
+      ctx.fillRect(GRID_X,y+GRID_Y,CELL*GRID_N,1);
+    }
+
+    ctx.restore();
+
+    for(let r=0;r<GRID_N;r++){
+      for(let c=0;c<GRID_N;c++){
+        if(this.cells[r][c])
           drawBlock(
             GRID_X+c*CELL+2,
             GRID_Y+r*CELL+2,
             CELL-4,
             CELL-4,
-            col
+            this.cells[r][c]
           );
       }
     }
-
-    if(this.flashT > 0) {
-      this.flashT--;
-
-      this.flash.forEach(k=>{
-        const [r,c] = k.split(',').map(Number);
-
-        ctx.save();
-        ctx.globalAlpha = this.flashT/14;
-        ctx.fillStyle = '#111827';
-        roundRect(
-          ctx,
-          GRID_X+c*CELL,
-          GRID_Y+r*CELL,
-          CELL,
-          CELL,
-          R
-        );
-        ctx.fill();
-        ctx.restore();
-      });
-
-      if(this.flashT === 1 && this.pendingClear.length) {
-        this.pendingClear.forEach(k => {
-          const [r,c] = k.split(',').map(Number);
-          this.cells[r][c] = null;
-        });
-
-        this.pendingClear = [];
-      }
-    }
-  }
-
-  drawGhost(offsets,or,oc,col) {
-    if(or === null) return;
-
-    ctx.save();
-    ctx.globalAlpha = 0.3;
-
-    offsets.forEach(([dr,dc])=>{
-      roundRect(
-        ctx,
-        GRID_X+(oc+dc)*CELL+2,
-        GRID_Y+(or+dr)*CELL+2,
-        CELL-4,
-        CELL-4,
-        R
-      );
-
-      ctx.fillStyle = col.fill;
-      ctx.fill();
-    });
-
-    ctx.restore();
   }
 }
 
-class Shape {
-  constructor(offsets,col) {
-    this.offsets = offsets;
-    this.col = col;
-    this.placed = false;
+class Shape{
+  constructor(o,col){this.o=o;this.col=col;this.p=false;}
 
-    const rs = offsets.map(([r])=>r);
-    const cs = offsets.map(([,c])=>c);
-
-    this.rowSpan = Math.max(...rs)+1;
-    this.colSpan = Math.max(...cs)+1;
-  }
-
-  drawTray(cx,cy) {
-    const ox = cx - this.colSpan*MINI/2;
-    const oy = cy - this.rowSpan*MINI/2;
-
-    this.offsets.forEach(([dr,dc])=>{
-      drawBlock(
-        ox+dc*MINI,
-        oy+dr*MINI,
-        MINI-2,
-        MINI-2,
-        this.col
-      );
+  drawTray(x,y){
+    this.o.forEach(([r,c])=>{
+      drawBlock(x+c*MINI,y+r*MINI,MINI-2,MINI-2,this.col);
     });
   }
 
-  drawDrag(x,y) {
-    this.offsets.forEach(([dr,dc])=>{
-      drawBlock(
-        x+dc*CELL,
-        y+dr*CELL,
-        CELL-4,
-        CELL-4,
-        this.col
-      );
+  drawDrag(x,y){
+    this.o.forEach(([r,c])=>{
+      drawBlock(x+c*CELL,y+r*CELL,CELL-4,CELL-4,this.col);
     });
   }
 }
 
-class GameManager {
-  constructor() {
-    this.best = Number(localStorage.getItem('bb_best') || 0);
-    this.particles = [];
-    this.reset();
-    this.bindEvents();
+class Game{
+  constructor(){this.reset();}
+
+  reset(){
+    this.grid=new Grid();
+    this.tray=[this.r(),this.r(),this.r()];
+    this.drag=null;
+    this.mx=0;this.my=0;
+    this.score=0;
+    this.best=0;
+    this.gameOver=false;
   }
 
-  reset() {
-    this.grid = new Grid();
-    this.score = 0;
-    this.animScore = 0;
-    this.dragging = null;
-    this.dragSlot = -1;
-    this.gameOver = false;
-    this.tray = [];
-    this.refillTray();
-  }
-
-  randShape() {
-    const valid = TEMPLATES.filter(t=>t.length<=5);
-
-    const col = COLORS[Math.floor(Math.random()*COLORS.length)];
-    const tmpl = valid[Math.floor(Math.random()*valid.length)];
-
-    return new Shape(tmpl,col);
-  }
-
-  refillTray() {
-    this.tray = [this.randShape(),this.randShape(),this.randShape()];
-  }
-
-  maybeRefill() {
-    if(this.tray.every(s=>!s || s.placed))
-      this.refillTray();
-  }
-
-  checkGameOver() {
-    return this.tray.every(s=>
-      !s || s.placed || !this.grid.canFitAnywhere(s.offsets)
+  r(){
+    return new Shape(
+      TEMPLATES[Math.random()*TEMPLATES.length|0],
+      COLORS[Math.random()*COLORS.length|0]
     );
   }
 
-  pxToGrid(px,py) {
-    return [
-      Math.floor((py-GRID_Y)/CELL),
-      Math.floor((px-GRID_X)/CELL)
-    ];
+  draw(){
+    ctx.clearRect(0,0,CW,CH);
+    this.grid.draw();
+
+    if(this.drag)
+      this.drag.drawDrag(this.mx-CELL/2,this.my-CELL/2);
+
+    this.tray.forEach((s,i)=>{
+      if(s&&!s.p)
+        s.drawTray(i*TRAY_W+TRAY_W/2,TRAY_CY);
+    });
   }
 
-  ghostCell() {
-    if(!this.dragging) return [null,null];
-
-    const gx = this.mx - GRID_X;
-    const gy = this.my - GRID_Y;
-
-    const gc = Math.floor(gx / CELL);
-    const gr = Math.floor(gy / CELL);
-
-    if(this.grid.canPlace(this.dragging.offsets,gr,gc))
-      return [gr,gc];
-
-    return [null,null];
-  }
-
-  onDown(px,py) {
-    if(this.gameOver) {
-      this.best = Math.max(this.best,this.score);
-      localStorage.setItem('bb_best',this.best);
-      this.reset();
-      return;
-    }
-
-    for(let i=0;i<3;i++) {
-      const s = this.tray[i];
-      if(s && !s.placed) {
-        this.dragging = s;
-        break;
-      }
-    }
-  }
-
-  onUp(px,py) {
-    if(!this.dragging) return;
-
-    const [gr,gc] = this.pxToGrid(px-CELL/2,py-CELL/2);
-
-    if(this.grid.canPlace(this.dragging.offsets,gr,gc)) {
-      this.grid.place(this.dragging.offsets,gr,gc,this.dragging.col);
-
-      this.dragging.placed = true;
-
-      this.score += this.dragging.offsets.length * 5;
-
-      const lines = this.grid.clearLines();
-
-      if(lines)
-        this.score += lines * 100;
-
-      this.maybeRefill();
-
-      requestAnimationFrame(()=>{
-        if(this.checkGameOver()) {
-          this.best = Math.max(this.best,this.score);
-          localStorage.setItem('bb_best',this.best);
-          this.gameOver = true;
-        }
-      });
-    }
-
-    this.dragging = null;
-    this.dragSlot = -1;
-  }
-
-  bindEvents() {
-    const pos = e => {
-      const rect = canvas.getBoundingClientRect();
-      const src = e.touches ? e.touches[0] : e;
-
+  bind(){
+    const p=e=>{
+      const r=canvas.getBoundingClientRect();
+      const t=e.touches?e.touches[0]:e;
       return [
-        (src.clientX - rect.left) * (canvas.width / rect.width),
-        (src.clientY - rect.top) * (canvas.height / rect.height)
+        (t.clientX-r.left)*(canvas.width/r.width),
+        (t.clientY-r.top)*(canvas.height/r.height)
       ];
     };
 
-    canvas.addEventListener('mousedown',e=>{
-      const [x,y]=pos(e);
-      this.mx=x;
-      this.my=y;
-      this.onDown(x,y);
-    });
-
-    canvas.addEventListener('mousemove',e=>{
-      const [x,y]=pos(e);
-      this.mx=x;
-      this.my=y;
-    });
-
-    canvas.addEventListener('mouseup',e=>{
-      const [x,y]=pos(e);
-      this.onUp(x,y);
-    });
-
-    canvas.addEventListener('mouseleave',()=>{
-      this.dragging = null;
-      this.dragSlot = -1;
-    });
-
-    canvas.addEventListener('touchstart',e=>{
-      e.preventDefault();
-      const [x,y]=pos(e);
-      this.mx=x;
-      this.my=y;
-      this.onDown(x,y);
-    },{passive:false});
-
-    canvas.addEventListener('touchmove',e=>{
-      e.preventDefault();
-      const [x,y]=pos(e);
-      this.mx=x;
-      this.my=y;
-    },{passive:false});
-
-    document.addEventListener('touchend',e=>{
-      e.preventDefault();
-      this.onUp(this.mx,this.my);
-    },{passive:false});
-
-    document.addEventListener('keydown',e=>{
-      if(/^r$/i.test(e.key)) {
-        this.best = Math.max(this.best,this.score);
-        localStorage.setItem('bb_best',this.best);
-        this.reset();
-      }
-    });
-  }
-
-  drawHUD() {
-    if(this.animScore < this.score)
-      this.animScore += Math.ceil((this.score-this.animScore)/6);
-
-    ctx.save();
-    ctx.font = `900 ${Math.floor(CELL*0.75)}px Orbitron`;
-    ctx.fillStyle = '#111827';
-    ctx.textAlign = 'center';
-    ctx.fillText(this.animScore,CW/2,66);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = `700 ${Math.floor(CELL*0.25)}px Orbitron`;
-    ctx.fillStyle = '#3344aa';
-    ctx.textAlign = 'right';
-    ctx.fillText(`BEST ${this.best}`,GRID_X+GRID_N*CELL,28);
-    ctx.restore();
-  }
-
-  drawTray() {
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(0,TRAY_CY-82,CW,164);
-
-    for(let i=0;i<3;i++) {
-      const s = this.tray[i];
-      if(s && !s.placed)
-        s.drawTray(i*TRAY_W+TRAY_W/2,TRAY_CY);
-    }
-  }
-
-  drawGameOver() {
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.fillRect(0,0,CW,CH);
-
-    ctx.save();
-    ctx.font = `900 ${Math.floor(CELL*0.6)}px Orbitron`;
-    ctx.fillStyle = '#d62839';
-    ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER',CW/2,CH/2);
-
-    ctx.font = `700 ${Math.floor(CELL*0.28)}px Orbitron`;
-    ctx.fillStyle = '#111827';
-    ctx.fillText('Tap To Restart',CW/2,CH/2+50);
-    ctx.restore();
-  }
-
-  draw() {
-    ctx.clearRect(0,0,CW,CH);
-
-    this.drawHUD();
-    this.grid.draw();
-
-    if(this.dragging) {
-      const [gr,gc] = this.ghostCell();
-      this.grid.drawGhost(this.dragging.offsets,gr,gc,this.dragging.col);
-    }
-
-    this.drawTray();
-
-    if(this.dragging)
-      this.dragging.drawDrag(this.mx-CELL/2,this.my-CELL/2);
-
-    if(this.gameOver)
-      this.drawGameOver();
+    canvas.onmousedown=e=>{const[x,y]=p(e);this.drag=this.tray[0];this.mx=x;this.my=y;};
+    canvas.onmousemove=e=>{const[x,y]=p(e);this.mx=x;this.my=y;};
+    canvas.onmouseup=e=>this.drag=null;
   }
 }
 
 initBg();
 
-function scaleCanvas() {
-  const maxH = window.innerHeight * 0.98;
-  const maxW = window.innerWidth * 0.98;
+const game=new Game();
+game.bind();
 
-  const scale = Math.min(maxW/CW,maxH/CH,1.4);
-
-  canvas.style.width = `${CW*scale}px`;
-  canvas.style.height = `${CH*scale}px`;
+function loop(){
+  drawBg();
+  game.draw();
+  requestAnimationFrame(loop);
 }
 
-scaleCanvas();
-
-window.addEventListener('resize',()=>{
-  initBg();
-  scaleCanvas();
-
-  clearTimeout(window.__resizeTimer);
-
-  window.__resizeTimer = setTimeout(()=>{
-    location.reload();
-  },250);
-});
-
-const game = new GameManager();
-
-let last = 0;
-
-function mainLoop(ts) {
-  if(ts-last > 1000/FPS) {
-    drawBg();
-    game.draw();
-    last = ts;
-  }
-
-  requestAnimationFrame(mainLoop);
-}
-
-requestAnimationFrame(mainLoop);
+loop();
 </script>
 </body>
 </html>
