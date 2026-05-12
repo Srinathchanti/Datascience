@@ -1,3 +1,6 @@
+# BLOCK BLAST — Fixed Full HTML Code
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,35 +9,30 @@
 <title>BLOCK BLAST</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  body {
-    background: #06061a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100dvh;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;
-  }
+body {
+  background:#06061a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  overflow:hidden;
+  user-select:none;
+  touch-action:none;
+}
 
-  #bg {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
+#bg {
+  position:fixed;
+  inset:0;
+  z-index:0;
+}
 
-  #game {
-    position: relative;
-    z-index: 1;
-    display: block;
-    cursor: grab;
-    border-radius: 12px;
-  }
-  #game:active { cursor: grabbing; }
+#game {
+  position:relative;
+  z-index:1;
+  border-radius:12px;
+}
 </style>
 </head>
 <body>
@@ -42,33 +40,27 @@
 <canvas id="game"></canvas>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════════════
-   BLOCK BLAST  –  single-file HTML5 Canvas puzzle game
-   ═══════════════════════════════════════════════════════════════════════ */
+const GRID_N = 8;
+const availW = Math.min(window.innerWidth, window.innerHeight * 0.62, 500);
+const CELL = Math.floor((availW - 24) / (GRID_N + 1));
+const CW = GRID_N * CELL + 80;
+const GRID_X = (CW - GRID_N * CELL) / 2;
+const GRID_Y = 108;
+const TRAY_CY = GRID_Y + GRID_N * CELL + 88;
+const TRAY_W = CW / 3;
+const MINI = Math.max(14, Math.floor(CELL * 0.37));
+const CH = TRAY_CY + 112;
+const R = Math.max(4, Math.floor(CELL * 0.13));
+const FPS = 60;
 
-// ── Responsive sizing ──────────────────────────────────────────────────────
-const GRID_N   = 8;
-const availW   = Math.min(window.innerWidth, window.innerHeight * 0.62, 500);
-const CELL     = Math.floor((availW - 24) / (GRID_N + 1));   // leaves side padding
-const CW       = GRID_N * CELL + 80;                          // canvas width
-const GRID_X   = (CW - GRID_N * CELL) / 2;
-const GRID_Y   = 108;
-const TRAY_CY  = GRID_Y + GRID_N * CELL + 88;
-const TRAY_W   = CW / 3;
-const MINI     = Math.max(14, Math.floor(CELL * 0.37));
-const CH       = TRAY_CY + 112;                               // canvas height
-const R        = Math.max(4, Math.floor(CELL * 0.13));       // corner radius
-const FPS      = 60;
+const bgCanvas = document.getElementById('bg');
+const bgCtx = bgCanvas.getContext('2d');
 
-// ── Canvas refs ────────────────────────────────────────────────────────────
-const bgCanvas  = document.getElementById('bg');
-const bgCtx     = bgCanvas.getContext('2d');
-const canvas    = document.getElementById('game');
-const ctx       = canvas.getContext('2d');
-canvas.width    = CW;
-canvas.height   = CH;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = CW;
+canvas.height = CH;
 
-// ── Palette ────────────────────────────────────────────────────────────────
 const COLORS = [
   { fill:'#ff3d55', glow:'#ff003388', hi:'#ff8899' },
   { fill:'#3dcfff', glow:'#0099ff88', hi:'#aaeeff' },
@@ -76,36 +68,32 @@ const COLORS = [
   { fill:'#40ff7a', glow:'#00ff4488', hi:'#a0ffcc' },
   { fill:'#bf40ff', glow:'#aa00ff88', hi:'#e090ff' },
   { fill:'#ff8c3d', glow:'#ff660088', hi:'#ffc090' },
-  { fill:'#ff3db8', glow:'#ff008888', hi:'#ff90d8' },
+  { fill:'#ff3db8', glow:'#ff008888', hi:'#ff90d8' }
 ];
 
-// ── Shape templates (row, col offsets) ─────────────────────────────────────
 const TEMPLATES = [
-  [[0,0],[0,1],[0,2],[0,3]],              // I-H
-  [[0,0],[1,0],[2,0],[3,0]],              // I-V
-  [[0,0],[0,1],[1,0],[1,1]],              // O
-  [[0,0],[0,1],[0,2],[1,1]],              // T-up
-  [[0,1],[1,0],[1,1],[1,2]],              // T-dn
-  [[0,0],[1,0],[2,0],[2,1]],              // L
-  [[0,1],[1,1],[2,0],[2,1]],              // J
-  [[0,1],[0,2],[1,0],[1,1]],             // S
-  [[0,0],[0,1],[1,1],[1,2]],             // Z
-  [[0,0]],                               // dot
-  [[0,0],[0,1]],                         // dom-H
-  [[0,0],[1,0]],                         // dom-V
-  [[0,0],[0,1],[0,2]],                   // tri-H
-  [[0,0],[1,0],[2,0]],                   // tri-V
-  [[0,0],[1,0],[1,1]],                   // corner-L
-  [[0,1],[1,0],[1,1]],                   // corner-J
-  [[0,0],[0,1],[0,2],[1,0]],             // L-flat
-  [[0,0],[0,1],[0,2],[1,2]],             // J-flat
-  [[0,0],[1,0],[2,0],[2,1],[2,2]],       // big-L
-  [[0,0],[0,1],[1,0],[1,1],[0,2]],       // P-shape
+  [[0,0],[0,1],[0,2],[0,3]],
+  [[0,0],[1,0],[2,0],[3,0]],
+  [[0,0],[0,1],[1,0],[1,1]],
+  [[0,0],[0,1],[0,2],[1,1]],
+  [[0,1],[1,0],[1,1],[1,2]],
+  [[0,0],[1,0],[2,0],[2,1]],
+  [[0,1],[1,1],[2,0],[2,1]],
+  [[0,1],[0,2],[1,0],[1,1]],
+  [[0,0],[0,1],[1,1],[1,2]],
+  [[0,0]],
+  [[0,0],[0,1]],
+  [[0,0],[1,0]],
+  [[0,0],[0,1],[0,2]],
+  [[0,0],[1,0],[2,0]],
+  [[0,0],[1,0],[1,1]],
+  [[0,1],[1,0],[1,1]],
+  [[0,0],[0,1],[0,2],[1,0]],
+  [[0,0],[0,1],[0,2],[1,2]],
+  [[0,0],[1,0],[2,0],[2,1],[2,2]],
+  [[0,0],[0,1],[1,0],[1,1],[0,2]]
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Drawing primitives
-// ═══════════════════════════════════════════════════════════════════════════
 function roundRect(cx, x, y, w, h, r) {
   cx.beginPath();
   cx.moveTo(x + r, y);
@@ -120,556 +108,535 @@ function roundRect(cx, x, y, w, h, r) {
   cx.closePath();
 }
 
-function drawBlock(x, y, w, h, col, glowOn = true, rad = R) {
-  // Glow
-  if (glowOn) {
-    ctx.save();
-    ctx.shadowColor  = col.glow;
-    ctx.shadowBlur   = 14;
-    ctx.fillStyle    = col.fill;
-    roundRect(ctx, x, y, w, h, rad);
-    ctx.fill();
-    ctx.restore();
-  }
-  // Base fill
+function drawBlock(x, y, w, h, col) {
+  ctx.save();
+  ctx.shadowColor = col.glow;
+  ctx.shadowBlur = window.innerWidth < 600 ? 8 : 14;
   ctx.fillStyle = col.fill;
-  roundRect(ctx, x, y, w, h, rad);
+  roundRect(ctx, x, y, w, h, R);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = col.fill;
+  roundRect(ctx, x, y, w, h, R);
   ctx.fill();
 
-  // Top-left highlight gradient
-  const hl = ctx.createLinearGradient(x, y, x, y + h * 0.55);
-  hl.addColorStop(0,   col.hi + 'aa');
-  hl.addColorStop(0.5, col.hi + '22');
-  hl.addColorStop(1,   'transparent');
+  const hl = ctx.createLinearGradient(x, y, x, y+h);
+  hl.addColorStop(0, col.hi + 'aa');
+  hl.addColorStop(1, 'transparent');
   ctx.fillStyle = hl;
-  roundRect(ctx, x+1, y+1, w-2, h-2, rad);
-  ctx.fill();
-
-  // Bottom shadow strip
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  roundRect(ctx, x+2, y + h - Math.min(h*0.3, 9), w-4, Math.min(h*0.3, 9), rad);
+  roundRect(ctx, x+1, y+1, w-2, h-2, R);
   ctx.fill();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Background starfield
-// ═══════════════════════════════════════════════════════════════════════════
 let stars = [];
+
 function initBg() {
-  bgCanvas.width  = window.innerWidth;
+  bgCanvas.width = window.innerWidth;
   bgCanvas.height = window.innerHeight;
-  stars = Array.from({length: 160}, () => ({
-    x : Math.random() * bgCanvas.width,
-    y : Math.random() * bgCanvas.height,
-    r : Math.random() * 1.4 + 0.2,
-    a : Math.random(),
-    da: (Math.random() - 0.5) * 0.006,
+
+  stars = Array.from({length:160}, () => ({
+    x:Math.random()*bgCanvas.width,
+    y:Math.random()*bgCanvas.height,
+    r:Math.random()*1.5,
+    a:Math.random(),
+    da:(Math.random()-0.5)*0.01
   }));
 }
+
 function drawBg() {
-  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+
   const g = bgCtx.createRadialGradient(
-    bgCanvas.width/2, bgCanvas.height/2, 0,
-    bgCanvas.width/2, bgCanvas.height/2, bgCanvas.height * 0.9);
-  g.addColorStop(0, '#0d0d28');
-  g.addColorStop(1, '#040410');
+    bgCanvas.width/2,
+    bgCanvas.height/2,
+    0,
+    bgCanvas.width/2,
+    bgCanvas.height/2,
+    bgCanvas.height
+  );
+
+  g.addColorStop(0,'#0d0d28');
+  g.addColorStop(1,'#040410');
+
   bgCtx.fillStyle = g;
-  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
 
   stars.forEach(s => {
     s.a += s.da;
-    if (s.a > 1 || s.a < 0.05) s.da *= -1;
+    if(s.a > 1 || s.a < 0.1) s.da *= -1;
+
     bgCtx.beginPath();
-    bgCtx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-    bgCtx.fillStyle = `rgba(140,170,255,${s.a.toFixed(2)})`;
+    bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    bgCtx.fillStyle = `rgba(150,180,255,${s.a})`;
     bgCtx.fill();
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Grid
-// ═══════════════════════════════════════════════════════════════════════════
 class Grid {
   constructor() {
-    this.cells = Array.from({length: GRID_N}, () => Array(GRID_N).fill(null));
-    this.flash  = new Set();   // currently flashing cells
+    this.cells = Array.from({length:GRID_N},()=>Array(GRID_N).fill(null));
+    this.flash = new Set();
     this.flashT = 0;
+    this.pendingClear = [];
   }
 
-  inBounds(r, c) { return r >= 0 && r < GRID_N && c >= 0 && c < GRID_N; }
+  inBounds(r,c) {
+    return r>=0 && r<GRID_N && c>=0 && c<GRID_N;
+  }
 
-  canPlace(offsets, or, oc) {
+  canPlace(offsets,or,oc) {
     return offsets.every(([dr,dc]) => {
-      const r = or+dr, c = oc+dc;
+      const r = or+dr;
+      const c = oc+dc;
       return this.inBounds(r,c) && !this.cells[r][c];
     });
   }
 
   canFitAnywhere(offsets) {
-    for (let r = 0; r < GRID_N; r++)
-      for (let c = 0; c < GRID_N; c++)
-        if (this.canPlace(offsets, r, c)) return true;
+    for(let r=0;r<GRID_N;r++)
+      for(let c=0;c<GRID_N;c++)
+        if(this.canPlace(offsets,r,c)) return true;
+
     return false;
   }
 
-  place(offsets, or, oc, col) {
-    offsets.forEach(([dr,dc]) => { this.cells[or+dr][oc+dc] = col; });
+  place(offsets,or,oc,col) {
+    offsets.forEach(([dr,dc]) => {
+      this.cells[or+dr][oc+dc] = col;
+    });
   }
 
   clearLines() {
-    const rows = [], cols = [];
-    for (let r = 0; r < GRID_N; r++)
-      if (this.cells[r].every(c => c)) rows.push(r);
-    for (let c = 0; c < GRID_N; c++)
-      if (this.cells.every(row => row[c])) cols.push(c);
+    const rows=[];
+    const cols=[];
+
+    for(let r=0;r<GRID_N;r++)
+      if(this.cells[r].every(c=>c)) rows.push(r);
+
+    for(let c=0;c<GRID_N;c++)
+      if(this.cells.every(row=>row[c])) cols.push(c);
 
     const cleared = new Set();
-    rows.forEach(r => { for (let c = 0; c < GRID_N; c++) cleared.add(`${r},${c}`); });
-    cols.forEach(c => { for (let r = 0; r < GRID_N; r++) cleared.add(`${r},${c}`); });
 
-    this.flash  = cleared;
-    this.flashT = 14;
-
-    cleared.forEach(k => {
-      const [r,c] = k.split(',').map(Number);
-      this.cells[r][c] = null;
+    rows.forEach(r=>{
+      for(let c=0;c<GRID_N;c++)
+        cleared.add(`${r},${c}`);
     });
+
+    cols.forEach(c=>{
+      for(let r=0;r<GRID_N;r++)
+        cleared.add(`${r},${c}`);
+    });
+
+    this.flash = cleared;
+    this.flashT = 14;
+    this.pendingClear = [...cleared];
+
     return rows.length + cols.length;
   }
 
   draw() {
-    // Panel
-    ctx.save();
-    ctx.shadowColor = '#0a0a40';
-    ctx.shadowBlur  = 24;
-    ctx.fillStyle   = '#0b0b24';
-    roundRect(ctx, GRID_X-10, GRID_Y-10, GRID_N*CELL+20, GRID_N*CELL+20, 16);
+    ctx.fillStyle = '#0b0b24';
+    roundRect(ctx,GRID_X-10,GRID_Y-10,GRID_N*CELL+20,GRID_N*CELL+20,16);
     ctx.fill();
-    ctx.restore();
 
-    // Subtle grid lines
-    ctx.strokeStyle = '#191938';
-    ctx.lineWidth   = 1;
-    for (let i = 0; i <= GRID_N; i++) {
-      ctx.beginPath();
-      ctx.moveTo(GRID_X + i*CELL, GRID_Y);
-      ctx.lineTo(GRID_X + i*CELL, GRID_Y + GRID_N*CELL);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(GRID_X,              GRID_Y + i*CELL);
-      ctx.lineTo(GRID_X + GRID_N*CELL, GRID_Y + i*CELL);
-      ctx.stroke();
+    for(let r=0;r<GRID_N;r++) {
+      for(let c=0;c<GRID_N;c++) {
+        const col = this.cells[r][c];
+        if(col)
+          drawBlock(
+            GRID_X+c*CELL+2,
+            GRID_Y+r*CELL+2,
+            CELL-4,
+            CELL-4,
+            col
+          );
+      }
     }
 
-    // Flash animation for cleared cells
-    if (this.flashT > 0) {
+    if(this.flashT > 0) {
       this.flashT--;
-      const progress = this.flashT / 14;
-      this.flash.forEach(k => {
+
+      this.flash.forEach(k=>{
         const [r,c] = k.split(',').map(Number);
+
         ctx.save();
-        ctx.globalAlpha = progress;
-        ctx.fillStyle   = `rgba(255,255,255,${progress * 0.9})`;
-        ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur  = 20 * progress;
-        roundRect(ctx, GRID_X + c*CELL+1, GRID_Y + r*CELL+1, CELL-2, CELL-2, R);
+        ctx.globalAlpha = this.flashT/14;
+        ctx.fillStyle = '#ffffff';
+        roundRect(
+          ctx,
+          GRID_X+c*CELL,
+          GRID_Y+r*CELL,
+          CELL,
+          CELL,
+          R
+        );
         ctx.fill();
         ctx.restore();
       });
-    }
 
-    // Filled cells
-    for (let r = 0; r < GRID_N; r++) {
-      for (let c = 0; c < GRID_N; c++) {
-        const col = this.cells[r][c];
-        if (col) drawBlock(GRID_X+c*CELL+2, GRID_Y+r*CELL+2, CELL-4, CELL-4, col);
+      if(this.flashT === 1 && this.pendingClear.length) {
+        this.pendingClear.forEach(k => {
+          const [r,c] = k.split(',').map(Number);
+          this.cells[r][c] = null;
+        });
+
+        this.pendingClear = [];
       }
     }
   }
 
-  drawGhost(offsets, or, oc, col) {
-    if (or === null) return;
+  drawGhost(offsets,or,oc,col) {
+    if(or === null) return;
+
     ctx.save();
-    offsets.forEach(([dr,dc]) => {
-      const x = GRID_X + (oc+dc)*CELL+2, y = GRID_Y + (or+dr)*CELL+2;
-      // Translucent fill
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle   = col.fill;
-      roundRect(ctx, x, y, CELL-4, CELL-4, R);
+    ctx.globalAlpha = 0.3;
+
+    offsets.forEach(([dr,dc])=>{
+      roundRect(
+        ctx,
+        GRID_X+(oc+dc)*CELL+2,
+        GRID_Y+(or+dr)*CELL+2,
+        CELL-4,
+        CELL-4,
+        R
+      );
+
+      ctx.fillStyle = col.fill;
       ctx.fill();
-      // Bright outline
-      ctx.globalAlpha  = 0.75;
-      ctx.strokeStyle  = col.fill;
-      ctx.lineWidth    = 2;
-      ctx.shadowColor  = col.glow;
-      ctx.shadowBlur   = 10;
-      roundRect(ctx, x, y, CELL-4, CELL-4, R);
-      ctx.stroke();
     });
+
     ctx.restore();
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Shape
-// ═══════════════════════════════════════════════════════════════════════════
 class Shape {
-  constructor(offsets, col) {
-    this.offsets  = offsets;
-    this.col      = col;
-    this.placed   = false;
-    const rs = offsets.map(([r]) => r), cs = offsets.map(([,c]) => c);
-    this.rowSpan  = Math.max(...rs) - Math.min(...rs) + 1;
-    this.colSpan  = Math.max(...cs) - Math.min(...cs) + 1;
+  constructor(offsets,col) {
+    this.offsets = offsets;
+    this.col = col;
+    this.placed = false;
+
+    const rs = offsets.map(([r])=>r);
+    const cs = offsets.map(([,c])=>c);
+
+    this.rowSpan = Math.max(...rs)+1;
+    this.colSpan = Math.max(...cs)+1;
   }
 
-  drawTray(cx, cy, cell = MINI) {
-    const ox = cx - this.colSpan * cell / 2;
-    const oy = cy - this.rowSpan * cell / 2;
-    this.offsets.forEach(([dr,dc]) => {
-      drawBlock(ox + dc*cell+1, oy + dr*cell+1, cell-2, cell-2, this.col, true, 4);
+  drawTray(cx,cy) {
+    const ox = cx - this.colSpan*MINI/2;
+    const oy = cy - this.rowSpan*MINI/2;
+
+    this.offsets.forEach(([dr,dc])=>{
+      drawBlock(
+        ox+dc*MINI,
+        oy+dr*MINI,
+        MINI-2,
+        MINI-2,
+        this.col
+      );
     });
   }
 
-  drawDrag(ox, oy) {
-    this.offsets.forEach(([dr,dc]) => {
-      drawBlock(ox + dc*CELL+2, oy + dr*CELL+2, CELL-4, CELL-4, this.col);
+  drawDrag(x,y) {
+    this.offsets.forEach(([dr,dc])=>{
+      drawBlock(
+        x+dc*CELL,
+        y+dr*CELL,
+        CELL-4,
+        CELL-4,
+        this.col
+      );
     });
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// GameManager
-// ═══════════════════════════════════════════════════════════════════════════
 class GameManager {
   constructor() {
-    this.best      = 0;
+    this.best = Number(localStorage.getItem('bb_best') || 0);
     this.particles = [];
     this.reset();
     this.bindEvents();
   }
 
   reset() {
-    this.grid      = new Grid();
-    this.score     = 0;
-    this.tray      = [];
-    this.dragging  = null;
-    this.dragSlot  = -1;
-    this.mx = 0; this.my = 0;
-    this.gameOver  = false;
-    this.animScore = 0;   // displayed score (animates up)
+    this.grid = new Grid();
+    this.score = 0;
+    this.animScore = 0;
+    this.dragging = null;
+    this.dragSlot = -1;
+    this.gameOver = false;
+    this.tray = [];
     this.refillTray();
   }
 
   randShape() {
-    const col  = COLORS[Math.floor(Math.random() * COLORS.length)];
-    const tmpl = TEMPLATES[Math.floor(Math.random() * TEMPLATES.length)];
-    return new Shape(tmpl, col);
+    const valid = TEMPLATES.filter(t=>t.length<=5);
+
+    const col = COLORS[Math.floor(Math.random()*COLORS.length)];
+    const tmpl = valid[Math.floor(Math.random()*valid.length)];
+
+    return new Shape(tmpl,col);
   }
 
-  refillTray() { this.tray = [this.randShape(), this.randShape(), this.randShape()]; }
+  refillTray() {
+    this.tray = [this.randShape(),this.randShape(),this.randShape()];
+  }
 
   maybeRefill() {
-    if (this.tray.every(s => !s || s.placed)) this.refillTray();
+    if(this.tray.every(s=>!s || s.placed))
+      this.refillTray();
   }
 
   checkGameOver() {
-    return this.tray.every(s => !s || s.placed || !this.grid.canFitAnywhere(s.offsets));
+    return this.tray.every(s=>
+      !s || s.placed || !this.grid.canFitAnywhere(s.offsets)
+    );
   }
 
-  pxToGrid(px, py) {
-    return [Math.floor((py - GRID_Y) / CELL), Math.floor((px - GRID_X) / CELL)];
+  pxToGrid(px,py) {
+    return [
+      Math.floor((py-GRID_Y)/CELL),
+      Math.floor((px-GRID_X)/CELL)
+    ];
   }
 
   ghostCell() {
-    if (!this.dragging) return [null, null];
-    const [gr, gc] = this.pxToGrid(this.mx - CELL/2, this.my - CELL/2);
-    return this.grid.canPlace(this.dragging.offsets, gr, gc) ? [gr, gc] : [null, null];
+    if(!this.dragging) return [null,null];
+
+    const gx = this.mx - GRID_X;
+    const gy = this.my - GRID_Y;
+
+    const gc = Math.floor(gx / CELL);
+    const gr = Math.floor(gy / CELL);
+
+    if(this.grid.canPlace(this.dragging.offsets,gr,gc))
+      return [gr,gc];
+
+    return [null,null];
   }
 
-  trayRect(i) {
-    return { x: i * TRAY_W, y: TRAY_CY - 78, w: TRAY_W, h: 156 };
-  }
+  onDown(px,py) {
+    if(this.gameOver) {
+      this.best = Math.max(this.best,this.score);
+      localStorage.setItem('bb_best',this.best);
+      this.reset();
+      return;
+    }
 
-  hitsTray(px, py, i) {
-    const r = this.trayRect(i);
-    return px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h;
-  }
-
-  spawnParticles(offsets, or, oc, col) {
-    offsets.forEach(([dr,dc]) => {
-      const cx = GRID_X + (oc+dc)*CELL + CELL/2;
-      const cy = GRID_Y + (or+dr)*CELL + CELL/2;
-      for (let i = 0; i < 5; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 2.5 + 1;
-        this.particles.push({
-          x: cx, y: cy,
-          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-          col: col.fill,
-          life: 1, decay: 0.05 + Math.random() * 0.04,
-          r: Math.random() * 3 + 1,
-        });
-      }
-    });
-  }
-
-  onDown(px, py) {
-    if (this.gameOver) { this.best = Math.max(this.best, this.score); this.reset(); return; }
-    for (let i = 0; i < 3; i++) {
+    for(let i=0;i<3;i++) {
       const s = this.tray[i];
-      if (s && !s.placed && this.hitsTray(px, py, i)) {
+      if(s && !s.placed) {
         this.dragging = s;
-        this.dragSlot = i;
         break;
       }
     }
   }
 
-  onUp(px, py) {
-    if (!this.dragging) return;
-    const [gr, gc] = this.pxToGrid(px - CELL/2, py - CELL/2);
-    if (this.grid.canPlace(this.dragging.offsets, gr, gc)) {
-      this.grid.place(this.dragging.offsets, gr, gc, this.dragging.col);
+  onUp(px,py) {
+    if(!this.dragging) return;
+
+    const [gr,gc] = this.pxToGrid(px-CELL/2,py-CELL/2);
+
+    if(this.grid.canPlace(this.dragging.offsets,gr,gc)) {
+      this.grid.place(this.dragging.offsets,gr,gc,this.dragging.col);
+
       this.dragging.placed = true;
+
       this.score += this.dragging.offsets.length * 5;
-      this.spawnParticles(this.dragging.offsets, gr, gc, this.dragging.col);
+
       const lines = this.grid.clearLines();
-      if (lines) {
-        this.score += lines * 100 + Math.max(0, lines - 1) * 200;
-        this.spawnLineParticles(lines);
-      }
+
+      if(lines)
+        this.score += lines * 100;
+
       this.maybeRefill();
-      if (this.checkGameOver()) { this.best = Math.max(this.best, this.score); this.gameOver = true; }
+
+      requestAnimationFrame(()=>{
+        if(this.checkGameOver()) {
+          this.best = Math.max(this.best,this.score);
+          localStorage.setItem('bb_best',this.best);
+          this.gameOver = true;
+        }
+      });
     }
+
     this.dragging = null;
     this.dragSlot = -1;
   }
 
-  spawnLineParticles(lines) {
-    for (let i = 0; i < lines * 30; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 5 + 2;
-      const col   = COLORS[Math.floor(Math.random() * COLORS.length)];
-      this.particles.push({
-        x: GRID_X + Math.random() * GRID_N * CELL,
-        y: GRID_Y + Math.random() * GRID_N * CELL,
-        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
-        col: col.fill,
-        life: 1, decay: 0.025 + Math.random() * 0.025,
-        r: Math.random() * 4 + 2,
-      });
-    }
-  }
-
   bindEvents() {
     const pos = e => {
-      const rect   = canvas.getBoundingClientRect();
-      const scaleX = canvas.width  / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const src    = e.touches ? e.touches[0] : e;
-      return [(src.clientX - rect.left) * scaleX,
-              (src.clientY - rect.top)  * scaleY];
+      const rect = canvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+
+      return [
+        (src.clientX - rect.left) * (canvas.width / rect.width),
+        (src.clientY - rect.top) * (canvas.height / rect.height)
+      ];
     };
 
-    canvas.addEventListener('mousedown',  e => { const [x,y]=pos(e); this.mx=x; this.my=y; this.onDown(x,y); });
-    canvas.addEventListener('mousemove',  e => { const [x,y]=pos(e); this.mx=x; this.my=y; });
-    canvas.addEventListener('mouseup',    e => { const [x,y]=pos(e); this.onUp(x,y); });
-    canvas.addEventListener('mouseleave', ()=> { this.dragging=null; });
+    canvas.addEventListener('mousedown',e=>{
+      const [x,y]=pos(e);
+      this.mx=x;
+      this.my=y;
+      this.onDown(x,y);
+    });
 
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); const [x,y]=pos(e); this.mx=x; this.my=y; this.onDown(x,y); }, {passive:false});
-    canvas.addEventListener('touchmove',  e => { e.preventDefault(); const [x,y]=pos(e); this.mx=x; this.my=y; }, {passive:false});
-    canvas.addEventListener('touchend',   e => { e.preventDefault(); this.onUp(this.mx, this.my); }, {passive:false});
+    canvas.addEventListener('mousemove',e=>{
+      const [x,y]=pos(e);
+      this.mx=x;
+      this.my=y;
+    });
 
-    document.addEventListener('keydown',  e => { if (/^r$/i.test(e.key)) { this.best=Math.max(this.best,this.score); this.reset(); }});
+    canvas.addEventListener('mouseup',e=>{
+      const [x,y]=pos(e);
+      this.onUp(x,y);
+    });
+
+    canvas.addEventListener('mouseleave',()=>{
+      this.dragging = null;
+      this.dragSlot = -1;
+    });
+
+    canvas.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      const [x,y]=pos(e);
+      this.mx=x;
+      this.my=y;
+      this.onDown(x,y);
+    },{passive:false});
+
+    canvas.addEventListener('touchmove',e=>{
+      e.preventDefault();
+      const [x,y]=pos(e);
+      this.mx=x;
+      this.my=y;
+    },{passive:false});
+
+    document.addEventListener('touchend',e=>{
+      e.preventDefault();
+      this.onUp(this.mx,this.my);
+    },{passive:false});
+
+    document.addEventListener('keydown',e=>{
+      if(/^r$/i.test(e.key)) {
+        this.best = Math.max(this.best,this.score);
+        localStorage.setItem('bb_best',this.best);
+        this.reset();
+      }
+    });
   }
 
-  // ── Rendering ────────────────────────────────────────────────────────────
   drawHUD() {
-    // Animate score counter
-    if (this.animScore < this.score) this.animScore = Math.min(this.score, this.animScore + Math.ceil((this.score - this.animScore) / 6));
-
-    const scoreStr = Math.round(this.animScore).toLocaleString();
-    const fs = Math.max(28, Math.floor(CELL * 0.78));
+    if(this.animScore < this.score)
+      this.animScore += Math.ceil((this.score-this.animScore)/6);
 
     ctx.save();
-    ctx.font        = `900 ${fs}px 'Orbitron', monospace`;
-    ctx.textAlign   = 'center';
-    ctx.shadowColor = '#3366ff';
-    ctx.shadowBlur  = 22;
-    ctx.fillStyle   = '#ffffff';
-    ctx.fillText(scoreStr, CW/2, 66);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font      = `700 ${Math.floor(CELL * 0.26)}px 'Orbitron', monospace`;
+    ctx.font = `900 ${Math.floor(CELL*0.75)}px Orbitron`;
+    ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#2a3a7a';
-    ctx.fillText('SCORE', CW/2, 86);
+    ctx.fillText(this.animScore,CW/2,66);
     ctx.restore();
 
     ctx.save();
-    ctx.font      = `700 ${Math.floor(CELL * 0.24)}px 'Orbitron', monospace`;
+    ctx.font = `700 ${Math.floor(CELL*0.25)}px Orbitron`;
+    ctx.fillStyle = '#5577ff';
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#2a2a5a';
-    ctx.fillText(`BEST  ${this.best.toLocaleString()}`, GRID_X + GRID_N*CELL, 28);
+    ctx.fillText(`BEST ${this.best}`,GRID_X+GRID_N*CELL,28);
     ctx.restore();
   }
 
   drawTray() {
-    // Background strip
     ctx.fillStyle = '#090920';
-    ctx.fillRect(0, TRAY_CY - 82, CW, 164);
+    ctx.fillRect(0,TRAY_CY-82,CW,164);
 
-    // Top and bottom hairlines
-    ctx.strokeStyle = '#14143a';
-    ctx.lineWidth   = 1;
-    ctx.beginPath(); ctx.moveTo(0, TRAY_CY-82); ctx.lineTo(CW, TRAY_CY-82); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, TRAY_CY+82); ctx.lineTo(CW, TRAY_CY+82); ctx.stroke();
-
-    // "NEXT" label
-    ctx.font      = `700 ${Math.floor(CELL * 0.22)}px 'Orbitron', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#1e1e50';
-    ctx.fillText('NEXT PIECES', CW/2, TRAY_CY - 60);
-
-    // Slot dividers
-    ctx.strokeStyle = '#111130';
-    for (let i = 1; i < 3; i++) {
-      ctx.beginPath(); ctx.moveTo(i*TRAY_W, TRAY_CY-70); ctx.lineTo(i*TRAY_W, TRAY_CY+70); ctx.stroke();
-    }
-
-    for (let i = 0; i < 3; i++) {
+    for(let i=0;i<3;i++) {
       const s = this.tray[i];
-      if (s && !s.placed) {
-        s.drawTray(i * TRAY_W + TRAY_W/2, TRAY_CY);
-      }
+      if(s && !s.placed)
+        s.drawTray(i*TRAY_W+TRAY_W/2,TRAY_CY);
     }
-  }
-
-  drawParticles() {
-    this.particles = this.particles.filter(p => p.life > 0);
-    this.particles.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle   = p.col;
-      ctx.shadowColor = p.col;
-      ctx.shadowBlur  = 8;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-      p.x    += p.vx;
-      p.y    += p.vy;
-      p.vy   += 0.08;
-      p.life -= p.decay;
-    });
   }
 
   drawGameOver() {
-    // Vignette overlay
-    ctx.fillStyle = 'rgba(2,2,14,0.85)';
-    ctx.fillRect(0, 0, CW, CH);
-
-    // Card
-    const cw = CW * 0.78, ch = 210;
-    const cx = (CW - cw)/2, cy = CH/2 - ch/2 - 10;
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0,0,CW,CH);
 
     ctx.save();
-    ctx.shadowColor = '#2244ff';
-    ctx.shadowBlur  = 40;
-    ctx.fillStyle   = '#0c0c26';
-    roundRect(ctx, cx, cy, cw, ch, 20);
-    ctx.fill();
-    ctx.restore();
+    ctx.font = `900 ${Math.floor(CELL*0.6)}px Orbitron`;
+    ctx.fillStyle = '#ff5555';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER',CW/2,CH/2);
 
-    // Glowing border
-    const borderGrad = ctx.createLinearGradient(cx, cy, cx+cw, cy+ch);
-    borderGrad.addColorStop(0,   '#3355ff');
-    borderGrad.addColorStop(0.5, '#aa22ff');
-    borderGrad.addColorStop(1,   '#3355ff');
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth   = 2;
-    roundRect(ctx, cx, cy, cw, ch, 20);
-    ctx.stroke();
-
-    // "GAME OVER"
-    ctx.save();
-    ctx.font        = `900 ${Math.floor(CELL * 0.65)}px 'Orbitron', monospace`;
-    ctx.textAlign   = 'center';
-    ctx.shadowColor = '#ff2200';
-    ctx.shadowBlur  = 24;
-    ctx.fillStyle   = '#ff4444';
-    ctx.fillText('GAME OVER', CW/2, cy + 68);
-    ctx.restore();
-
-    // Score line
-    ctx.save();
-    ctx.font        = `700 ${Math.floor(CELL * 0.36)}px 'Orbitron', monospace`;
-    ctx.textAlign   = 'center';
-    ctx.shadowColor = '#0055ff';
-    ctx.shadowBlur  = 14;
-    ctx.fillStyle   = '#5599ff';
-    ctx.fillText(`SCORE  ${this.score.toLocaleString()}`, CW/2, cy + 116);
-    ctx.restore();
-
-    // Restart hint (pulsing)
-    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 500);
-    ctx.save();
-    ctx.font        = `700 ${Math.floor(CELL * 0.22)}px 'Orbitron', monospace`;
-    ctx.textAlign   = 'center';
-    ctx.globalAlpha = 0.4 + pulse * 0.5;
-    ctx.fillStyle   = '#4466bb';
-    ctx.fillText('TAP OR PRESS R TO PLAY AGAIN', CW/2, cy + 170);
+    ctx.font = `700 ${Math.floor(CELL*0.28)}px Orbitron`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Tap To Restart',CW/2,CH/2+50);
     ctx.restore();
   }
 
   draw() {
-    ctx.clearRect(0, 0, CW, CH);
+    ctx.clearRect(0,0,CW,CH);
 
     this.drawHUD();
     this.grid.draw();
 
-    // Ghost
-    if (this.dragging) {
-      const [gr, gc] = this.ghostCell();
-      this.grid.drawGhost(this.dragging.offsets, gr, gc, this.dragging.col);
+    if(this.dragging) {
+      const [gr,gc] = this.ghostCell();
+      this.grid.drawGhost(this.dragging.offsets,gr,gc,this.dragging.col);
     }
 
     this.drawTray();
-    this.drawParticles();
 
-    // Piece being dragged (rendered on top)
-    if (this.dragging) {
-      this.dragging.drawDrag(this.mx - CELL/2, this.my - CELL/2);
-    }
+    if(this.dragging)
+      this.dragging.drawDrag(this.mx-CELL/2,this.my-CELL/2);
 
-    if (this.gameOver) this.drawGameOver();
+    if(this.gameOver)
+      this.drawGameOver();
   }
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────
 initBg();
 
-// Scale canvas to fit window while keeping it centred
 function scaleCanvas() {
   const maxH = window.innerHeight * 0.98;
-  const maxW = window.innerWidth  * 0.98;
-  const scale = Math.min(maxW / CW, maxH / CH, 1.4);
-  canvas.style.width  = `${CW * scale}px`;
-  canvas.style.height = `${CH * scale}px`;
+  const maxW = window.innerWidth * 0.98;
+
+  const scale = Math.min(maxW/CW,maxH/CH,1.4);
+
+  canvas.style.width = `${CW*scale}px`;
+  canvas.style.height = `${CH*scale}px`;
 }
+
 scaleCanvas();
-window.addEventListener('resize', () => { initBg(); scaleCanvas(); });
+
+window.addEventListener('resize',()=>{
+  initBg();
+  scaleCanvas();
+
+  clearTimeout(window.__resizeTimer);
+
+  window.__resizeTimer = setTimeout(()=>{
+    location.reload();
+  },250);
+});
 
 const game = new GameManager();
 
-function mainLoop() {
-  drawBg();
-  game.draw();
+let last = 0;
+
+function mainLoop(ts) {
+  if(ts-last > 1000/FPS) {
+    drawBg();
+    game.draw();
+    last = ts;
+  }
+
   requestAnimationFrame(mainLoop);
 }
+
 requestAnimationFrame(mainLoop);
 </script>
 </body>
 </html>
+```
