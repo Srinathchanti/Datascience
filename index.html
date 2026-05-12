@@ -12,7 +12,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 
 body {
-  background:#06061a;
+  background:#f4f6fb;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -156,8 +156,8 @@ function drawBg() {
     bgCanvas.height
   );
 
-  g.addColorStop(0,'#0d0d28');
-  g.addColorStop(1,'#040410');
+  g.addColorStop(0,'#ffffff');
+  g.addColorStop(1,'#e9eefc');
 
   bgCtx.fillStyle = g;
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
@@ -237,7 +237,7 @@ class Grid {
   }
 
   draw() {
-    ctx.fillStyle = '#0b0b24';
+    ctx.fillStyle = '#111827';
     roundRect(ctx,GRID_X-10,GRID_Y-10,GRID_N*CELL+20,GRID_N*CELL+20,16);
     ctx.fill();
 
@@ -263,7 +263,7 @@ class Grid {
 
         ctx.save();
         ctx.globalAlpha = this.flashT/14;
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#111827';
         roundRect(
           ctx,
           GRID_X+c*CELL,
@@ -535,21 +535,21 @@ class GameManager {
 
     ctx.save();
     ctx.font = `900 ${Math.floor(CELL*0.75)}px Orbitron`;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#111827';
     ctx.textAlign = 'center';
     ctx.fillText(this.animScore,CW/2,66);
     ctx.restore();
 
     ctx.save();
     ctx.font = `700 ${Math.floor(CELL*0.25)}px Orbitron`;
-    ctx.fillStyle = '#5577ff';
+    ctx.fillStyle = '#3344aa';
     ctx.textAlign = 'right';
     ctx.fillText(`BEST ${this.best}`,GRID_X+GRID_N*CELL,28);
     ctx.restore();
   }
 
   drawTray() {
-    ctx.fillStyle = '#090920';
+    ctx.fillStyle = '#111827';
     ctx.fillRect(0,TRAY_CY-82,CW,164);
 
     for(let i=0;i<3;i++) {
@@ -560,17 +560,17 @@ class GameManager {
   }
 
   drawGameOver() {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
     ctx.fillRect(0,0,CW,CH);
 
     ctx.save();
     ctx.font = `900 ${Math.floor(CELL*0.6)}px Orbitron`;
-    ctx.fillStyle = '#ff5555';
+    ctx.fillStyle = '#d62839';
     ctx.textAlign = 'center';
     ctx.fillText('GAME OVER',CW/2,CH/2);
 
     ctx.font = `700 ${Math.floor(CELL*0.28)}px Orbitron`;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#111827';
     ctx.fillText('Tap To Restart',CW/2,CH/2+50);
     ctx.restore();
   }
